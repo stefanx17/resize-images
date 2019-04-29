@@ -6,6 +6,7 @@ from PIL import Image
 import xml.etree.ElementTree as ET 
 
 def get_file_info(file):
+	# get the file name and extension
 	info = os.path.splitext(file)
 	return info[0], info[-1]
 
@@ -49,6 +50,7 @@ def get_image_mode(path):
 	first_frame = img.tile[0][1]
 
 	while True:
+		# for each frame verify the updated region
 		if img.tile:
 			update_region = img.tile[0][1]
 			if update_region != first_frame:
@@ -79,6 +81,7 @@ def resize_gif(infile, outfile, new_size):
 			new_frame.paste(frame.resize(new_size, Image.ANTIALIAS))
 			new_frame.info = frame.info
 
+			# add the current frame to the list of frames
 			all_frames.append(new_frame)
 			last_frame = new_frame
 
@@ -86,28 +89,34 @@ def resize_gif(infile, outfile, new_size):
 				frame.seek(frame.tell() + 1)
 			except EOFError:
 				break
-		all_frames[0].save(outfile, optimize=True, save_all=True, append_images=all_frames[1:], loop=0)
+		first_frame = all_frames[0]
+		first_frame.save(outfile, optimize=True, save_all=True, append_images=all_frames[1:], loop=0)
 	except IOError:
 		print("Cannot resize image '%s'" % path)
 
+def get_resize_method(ext):
+	method = resize_jpg
 
-def resize_image(image, path, out_path):
+	if ext == ".png":
+		method = resize_png
+	elif ext == ".svg":
+		method = resize_svg
+	elif ext == ".gif":
+		method = resize_gif
+	elif ext == ".jpg" or ".jpeg":
+		method = resize_jpg
+
+	return method
+
+def resize_image(image, path, out_path, new_size):
 
 	img_path = os.path.join(path, image)
 	filename, ext = get_file_info(image)
-	new_size = (150, 150)
-	out_path = os.path.join(out_path, filename + "_150x150" + ext)
+	out_path = os.path.join(out_path, 
+		filename + "_" + str(new_size[0]) + "x" + str(new_size[1]) + ext)
 
-	if ext == ".png":
-		resize_png(img_path, out_path, new_size)
-	elif ext == ".svg":
-		resize_svg(img_path, out_path, new_size)
-	elif ext == ".gif":
-		resize_gif(img_path, out_path, new_size)
-	else:
-		resize_jpg(img_path, out_path, new_size)
-
-
+	resize_method = get_resize_method(ext)
+	resize_method(img_path, out_path, new_size)
 
 if __name__ == '__main__':
 	parser = ArgumentParser()
@@ -116,10 +125,15 @@ if __name__ == '__main__':
 						help="The images folder")
 	parser.add_argument("--out_dir", type=str, default="resizes/",
 						help="The resized images folder")
+	parser.add_argument("--width", type=int, default=150,
+						help="The new width of the image")
+	parser.add_argument("--height", type=int, default=150,
+						help="The new height of the image")
 
 	args = parser.parse_args()
 	dir_path = args.dir
 	out_dir = args.out_dir
+	size = (args.width, args.height)
 
 	images = [img for img in listdir(dir_path) if isfile(os.path.join(dir_path, img))]
 
@@ -127,4 +141,4 @@ if __name__ == '__main__':
 		os.makedirs(out_dir)
 
 	for img in images:
-		resize_image(img, dir_path, out_dir)
+		resize_image(img, dir_path, out_dir, size)
