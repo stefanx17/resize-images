@@ -10,25 +10,27 @@ def get_file_info(file):
 	info = os.path.splitext(file)
 	return info[0], info[-1]
 
-def resize_jpg(path, outfile, new_size):
+def resize_jpg(infile, outfile, new_size):
 	try:
-		img = Image.open(path)
+		img = Image.open(infile)
 		img = img.resize(new_size, Image.ANTIALIAS)
 
 		# save the image to a new file
 		img.save(outfile, "JPEG")
+		print("Resized image '%s'" % infile)
 	except IOError:
-		print("Cannot resize image '%s'" % path)
+		print("Cannot resize image '%s'" % infile)
 
-def resize_png(path, outfile, new_size):
+def resize_png(infile, outfile, new_size):
 	try:
-		img = Image.open(path)
+		img = Image.open(infile)
 		img = img.resize(new_size, Image.ANTIALIAS)
 
 		# save the image to a new file
 		img.save(outfile, "PNG")
+		print("Resized image '%s'" % infile)
 	except IOError:
-		print("Cannot resize image '%s'" % path)
+		print("Cannot resize image '%s'" % infile)
 
 
 def resize_svg(infile, outfile, new_size):
@@ -42,6 +44,7 @@ def resize_svg(infile, outfile, new_size):
 	root.set('height', str(new_size[1]))
 
 	# save the image to a new file
+	print("Resized image '%s'" % infile)
 	tree.write(outfile)
 
 def get_image_mode(path):
@@ -91,6 +94,7 @@ def resize_gif(infile, outfile, new_size):
 				break
 		first_frame = all_frames[0]
 		first_frame.save(outfile, optimize=True, save_all=True, append_images=all_frames[1:], loop=0)
+		print("Resized image '%s'" % infile)
 	except IOError:
 		print("Cannot resize image '%s'" % path)
 
@@ -135,10 +139,12 @@ if __name__ == '__main__':
 	out_dir = args.out_dir
 	size = (args.width, args.height)
 
+	# get all the images in the specified folder
 	images = [img for img in listdir(dir_path) if isfile(os.path.join(dir_path, img))]
 
 	if not os.path.exists(out_dir):
 		os.makedirs(out_dir)
 
+	# iterate through the images and resize them
 	for img in images:
 		resize_image(img, dir_path, out_dir, size)
